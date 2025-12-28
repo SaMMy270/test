@@ -1,20 +1,37 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AR Hit Test Debug</title>
     <style>
-        body { margin: 0; background: #000; color: white; text-align: center; font-family: sans-serif; }
-        #info { position: fixed; top: 10px; width: 100%; z-index: 100; pointer-events: none; }
+        body {
+            margin: 0;
+            background: #000;
+            color: white;
+            text-align: center;
+            font-family: sans-serif;
+        }
+
+        #info {
+            position: fixed;
+            top: 10px;
+            width: 100%;
+            z-index: 100;
+            pointer-events: none;
+        }
     </style>
 </head>
+
 <body>
     <div id="info">Move phone to find floor.<br>Tap screen to place a box.</div>
 
     <script type="module">
         import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
         import { ARButton } from 'https://unpkg.com/three@0.160.0/examples/jsm/webxr/ARButton.js';
+        import { GLTFLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+
 
         let container, scene, camera, renderer, controller, reticle;
         let hitTestSource = null;
@@ -59,18 +76,29 @@
             window.addEventListener('resize', onWindowResize);
         }
 
+        const loader = new GLTFLoader();
+
         function onSelect() {
             if (reticle.visible) {
-                // Place a Simple Red Box instead of a GLB model
-                const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-                const material = new THREE.MeshPhongMaterial({ color: 0xff0000 });
-                const mesh = new THREE.Mesh(geometry, material);
-                
-                mesh.position.setFromMatrixPosition(reticle.matrix);
-                scene.add(mesh);
+               
+                const modelUrl = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb';
+
+                loader.load(modelUrl, (gltf) => {
+                    const model = gltf.scene;
+
+                    // Set position to where the reticle is
+                    model.position.setFromMatrixPosition(reticle.matrix);
+
+                    // IMPORTANT: Models are often too big or too small. 
+                    // Scale it to 0.2 (20% size) just in case.
+                    model.scale.set(0.2, 0.2, 0.2);
+
+                    scene.add(model);
+                },
+                    (xhr) => { console.log((xhr.loaded / xhr.total * 100) + '% loaded'); },
+                    (error) => { console.error('An error happened', error); });
             }
         }
-
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
@@ -110,4 +138,5 @@
         }
     </script>
 </body>
+
 </html>
